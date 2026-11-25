@@ -79,6 +79,7 @@ export function createWorld(random) {
     selectedPlate: -1,
     spawnIn: ORDERS.firstDelay,
     popups: [],
+    sparkles: [],
     shake: 0,
     lastServe: null,
   };
@@ -98,6 +99,7 @@ export function createWorld(random) {
     world.selectedPlate = -1;
     world.spawnIn = ORDERS.firstDelay;
     world.popups = [];
+    world.sparkles = [];
     world.shake = 0;
     world.lastServe = null;
   };
@@ -126,6 +128,24 @@ function spawnTicket(world) {
 
 function popup(world, x, y, text, colour) {
   world.popups.push({ x, y, text, colour, life: 1.1 });
+}
+
+/**
+ * A burst of little coin sparkles at (x, y), for serve feedback. The pattern is
+ * fixed (no randomness), so the simulation stays deterministic.
+ */
+export function spawnSparkles(world, x, y) {
+  for (let i = 0; i < 10; i += 1) {
+    const a = (i / 10) * Math.PI * 2 + 0.3;
+    const speed = 46 + (i % 3) * 22;
+    world.sparkles.push({
+      x, y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed - 30,
+      life: 0.7,
+      maxLife: 0.7,
+    });
+  }
 }
 
 /** Add an ingredient to the selected spot. Returns an event word for sound/feedback. */
@@ -292,6 +312,16 @@ export function stepWorld(world, dt) {
     p.life -= dt;
     p.y -= 34 * dt;
     if (p.life <= 0) world.popups.splice(i, 1);
+  }
+
+  // Sparkles burst, drift down and fade.
+  for (let i = world.sparkles.length - 1; i >= 0; i -= 1) {
+    const s = world.sparkles[i];
+    s.life -= dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    s.vy += 120 * dt;
+    if (s.life <= 0) world.sparkles.splice(i, 1);
   }
 
   if (world.timeLeft <= 0) {

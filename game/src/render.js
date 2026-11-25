@@ -210,10 +210,14 @@ function drawTicket(ctx, world, index) {
   const selectedMatches = world.selectedPlate >= 0
     && world.pass[world.selectedPlate]
     && world.pass[world.selectedPlate].recipeId === ticket.recipeId;
-  ctx.fillStyle = PALETTE.board;
+  // Low patience (under 25%): the ticket border and bar pulse red as a warning.
+  const frac = Math.max(0, ticket.patience / ticket.patienceMax);
+  const danger = frac < 0.25;
+  const flash = danger && Math.floor(performance.now() / 260) % 2 === 0;
+  ctx.fillStyle = flash ? '#ffe3de' : PALETTE.board;
   ctx.fill();
-  ctx.lineWidth = selectedMatches ? 4 : 2;
-  ctx.strokeStyle = selectedMatches ? PALETTE.gold : PALETTE.boardEdge;
+  ctx.lineWidth = selectedMatches ? 4 : danger ? 3.5 : 2;
+  ctx.strokeStyle = selectedMatches ? PALETTE.gold : danger ? (flash ? '#ff2015' : PALETTE.bad) : PALETTE.boardEdge;
   ctx.stroke();
   drawDish(ctx, recipe.id, box.x + 52, box.y + 55, 84, 'golden');
   text(ctx, recipe.name, box.x + 104, box.y + 26, 23, PALETTE.ink, 'left', 800);
@@ -224,12 +228,11 @@ function drawTicket(ctx, world, index) {
   coinIcon(ctx, box.x + box.w - 58, box.y + 26, 13);
   text(ctx, `${recipe.price}`, box.x + box.w - 40, box.y + 27, 19, PALETTE.ink, 'left', 800);
   // Patience bar.
-  const frac = Math.max(0, ticket.patience / ticket.patienceMax);
   rr(ctx, box.x + 104, box.y + 84, box.w - 128, 12, 6);
   ctx.fillStyle = '#e5d9c3';
   ctx.fill();
   rr(ctx, box.x + 104, box.y + 84, Math.max(12, (box.w - 128) * frac), 12, 6);
-  ctx.fillStyle = frac > 0.5 ? PALETTE.good : frac > 0.25 ? PALETTE.warn : PALETTE.bad;
+  ctx.fillStyle = danger ? (flash ? '#ff5040' : PALETTE.bad) : frac > 0.5 ? PALETTE.good : frac > 0.25 ? PALETTE.warn : PALETTE.bad;
   ctx.fill();
   if (selectedMatches) text(ctx, 'KLIK UNTUK MENYAJIKAN →', box.x + box.w - 24, box.y + box.h - 9, 13.5, '#b57e46', 'right', 800);
 }
@@ -465,6 +468,16 @@ function drawKitchen(ctx, world) {
   for (const p of world.popups) {
     ctx.globalAlpha = Math.min(1, p.life);
     text(ctx, p.text, p.x, p.y, 24, p.colour, 'center', 800);
+    ctx.globalAlpha = 1;
+  }
+  // Coin sparkles from a fresh serve.
+  for (const s of world.sparkles) {
+    const a = Math.max(0, s.life / s.maxLife);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = PALETTE.coin;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 1 + 3.5 * a, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
   }
 }

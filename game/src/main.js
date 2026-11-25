@@ -7,7 +7,7 @@ import { initAudio, sfx } from './audio.js';
 import {
   SCREEN_HOWTO, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE,
   addIngredient, createWorld, plateSpot, popup, servePlate, serveSelected,
-  stepWorld, trashPlate, trashSpot,
+  spawnSparkles, stepWorld, trashPlate, trashSpot,
 } from './world.js';
 import { LAYOUT, drawScene, hitTest } from './render.js';
 import { stageShot } from './shots.js';
@@ -101,7 +101,8 @@ function handleAction(action) {
       if (result === 'served') {
         sfx.serve();
         const box = LAYOUT.ticket(action.index);
-        popup(world, box.x + box.w / 2, box.y + 40, `+${world.coins - before} koin`, '#b57e46');
+        popup(world, box.x + box.w / 2, box.y + 40, `+Rp ${world.coins - before}`, '#b57e46');
+        spawnSparkles(world, box.x + box.w / 2, box.y + 55);
       } else {
         sfx.click();
       }
@@ -152,8 +153,18 @@ window.addEventListener('keydown', (event) => {
   if (key === ' ') {
     event.preventDefault();
     if (world.selectedPlate >= 0) {
+      const plate = world.pass[world.selectedPlate];
+      const tIndex = plate ? world.tickets.findIndex((t) => t.recipeId === plate.recipeId) : -1;
+      const before = world.coins;
       const result = serveSelected(world);
-      if (result === 'served') sfx.serve(); else sfx.click();
+      if (result === 'served') {
+        sfx.serve();
+        if (tIndex >= 0) {
+          const box = LAYOUT.ticket(tIndex);
+          popup(world, box.x + box.w / 2, box.y + 40, `+Rp ${world.coins - before}`, '#b57e46');
+          spawnSparkles(world, box.x + box.w / 2, box.y + 55);
+        }
+      } else sfx.click();
     } else {
       handleAction({ type: 'spot', id: world.selectedSpot });
     }
